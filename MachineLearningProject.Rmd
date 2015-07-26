@@ -288,11 +288,46 @@ We observed that there was a very close consistency between cross-validation run
 
 # Sample Errors
 
-For classification tree, the average accuracy of validation data across 10 different runs, starting with different seeds for separating the training data into training and validation was abut 65%.
+For classification tree, the average accuracy of validation data across 10 different runs, starting with different seeds for separating the training data into training and validation was abut 50%. The different values were: 
 
-The code ran very fast for LDA, and gave a better average accuracy - about 69%.
+[1] 0.4867455
+[1] 0.4946982
+[1] 0.5006117
+[1] 0.4963295
+[1] 0.4963295
+[1] 0.4977569
+[1] 0.4902121
+[1] 0.4893964
+[1] 0.5695351
+[1] 0.4991843
 
-While Native Bayes took the longest to run, it gave a better accuracy - 64%.
+
+The code ran very fast for LDA, and gave a better average accuracy - about 70%.The different values were:
+
+[1] 0.6939233
+[1] 0.7053426
+[1] 0.7061582
+[1] 0.697186
+[1] 0.6990212
+[1] 0.7075856
+[1] 0.7075856
+[1] 0.7051387
+[1] 0.6924959
+[1] 0.7037113
+
+While Native Bayes took the longest to run, it gave a better accuracy - 74%. The difference values were:
+
+
+[1] 0.7469413
+[1] 0.7393964
+[1] 0.7424551
+[1] 0.7406199
+[1] 0.7483687
+[1] 0.7304241
+[1] 0.7391925
+[1] 0.740416
+[1] 0.7422512
+[1] 0.7257341
 
 In order to be even more sure, I ran all three, and did 2 out of 3 voting. In 16 of the 20 test cases, I was able to get to a good result. In four cases, the votes were different for each of the three algorithms. I chose a path of moderation in there, rejecting the two extremes, and taking the middle value.
 
@@ -314,11 +349,10 @@ While 75% is not good, given the time constraints, I decided to use this for the
 
 In the final run for project submission, I got 65% accuracy. This matches my expectation that test accuracy should have been less than 75%. However, closer to 75% would have been better. 
 
-Given the time constraints, I chose not to analyze further.
+Given the time constraints, I chose not to analyze further. 
 
 
 # Explanation of Decisions
-
 
 ### Decision 1: Treating each observation as independent of other observations.
 
