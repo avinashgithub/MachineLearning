@@ -349,7 +349,7 @@ While 75% is not good, given the time constraints, I decided to use this for the
 
 In the final run for project submission, I got 65% accuracy. This matches my expectation that test accuracy should have been less than 75%. However, closer to 75% would have been better. 
 
-Given the time constraints, I chose not to analyze further. 
+Given the time constraints, I chose not to analyze further, although I know that it can produce better results.
 
 
 # Explanation of Decisions
