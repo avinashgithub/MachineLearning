@@ -1,0 +1,342 @@
+---
+title: "Analysis of The Quality of Exercise Performed"
+author: "AA"
+date: "Sunday, July 26, 2015"
+output: html_document
+---
+
+# Overview
+In this project, our goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the way they did their exercise. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (the section on the Weight Lifting Exercise Dataset). 
+
+Training and test data is available at:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Note 1: In order to stay within the limit of 2000 characters, all code is mraked with the flag "echo" set to FALSE. So, while you will not see the code in the html file, you will see it in the Rmd file.
+
+Note 2: While all the code for the exercise is in there, in order to not rerun it every time I run knittr, I have commented out the entire code. If you need to run it, just save the Rmd file, uncomment the code and run it. This was necessary because there was a lot of exploratory data analysis done, and the runs take a long time - the longest run took close to 22 hours.
+
+Note 3: This was a very interesting exercise, and a lot more could have been done. My analysis and results were constrained by computing resources and time available.
+
+
+```{r, echo=F}
+# Read the data
+
+# training = read.csv('pml-training.csv')
+# testing = read.csv('pml-testing.csv')
+# library(caret)
+```
+
+
+# Introduction
+
+The normal process for Machine Learning and Prediction is:
+Question -> Input data -> Features -> Algorithms -> Parameters -> Evaluation
+
+Our question is clear - given the data in rows (representing data samples) and columns (representing parameter values for various samples), for each row determine the quality of exercise movement performed, grading them from A to E.
+
+The input data is given. In a real-life exercise, we may have to identify what to collect, and then collect that data. 
+
+This project takes over in the third step, identifying the features of the data to be studied, and then selecting the appropriate algorithm for machine learning and prediction.  Parameters can be used to tweak machine learning. We did a little of that in selecting the different algorithms.
+
+The final stage was evaluation. Our prediction gave a 75% accuracy on our validation data. On the actual test data, we got an accuracy of 65%.  
+
+
+# Model Building
+
+## Covariate selection
+
+There is a large amount of data. Some of it is irrelevant to the analysis we are doing. While some others, while relevant, was not eough. Here are steps we took to cull the predictor.
+
+### Manual exploratory data analysis
+
+We identified parameters that were not relevant to the prediction we are trying to make. For simplicity sake, we have assumed that each observation in the data is independent. Consequently, columns identifying the subject, the time they did the exercise, and the windows are irrelevant, so we removed the first 7 columns of the data.
+
+```{r, echo=F}
+# training = training[,-c(1:7)]; testing= testing[,-c(1:7)]
+```
+
+### Removing NA data
+
+Data that is NA causes issues in prediction. We wrote a small script to eliminate columns that were more than 50% NA's. 
+
+
+```{r, echo=F}
+# # Eliminate those columns where > 50% are NA in the training set
+# # Starting at the end at moving towards the beginning
+# trainRows = nrow(training)
+# trainCols = ncol(training)
+# train1 = training
+# test1 = testing
+# for (i in 1:trainCols) {
+#     if (sum(is.na(train1[,(trainCols-i)]) / trainRows) > .5) {
+#         train1 = train1[,-(trainCols-i)]
+#         test1 = test1[,-(trainCols-i)]        
+#     }
+# }
+```
+
+We also eliminated predictors that had NA's in more than 90% of the test set. The thinking is that if 90% of the test set does not need these varibles, then there is no reason to base the model on these.
+
+
+```{r, echo=F}
+# # Do the same for test set, because if the predictors are not there in 90% of 
+# # test set, then there is no reason to consider them in training set
+# # So, this time, make the threshold .9
+# train2 = train1
+# test2 = test1
+# testRows = nrow(test2)
+# testCols = ncol(test2)
+# for (i in 1:testCols) {
+#     if (sum(is.na(test2[,(testCols-i)]) / testRows) > .9) {
+#         train2 = train2[,-(testCols-i)]
+#         test2 = test2[,-(testCols-i)]        
+#     }
+# }
+```
+
+A happy outcome of this was that there are no NA's left in there. We verified this in code.
+
+
+```{r, echo=F}
+# #Diagnosis - start
+# # Just find out if there are any NA's left in the training data
+# trainRows = nrow(train2)
+# trainCols = ncol(train2)
+# for (i in 1:trainCols) {
+#     if (sum(is.na(train2[,(trainCols-i)]) > 0)) {
+#         print(trainCols-i)
+#         print("NA's Found")
+#     }
+# }
+# #Diagnosis - end
+
+```
+
+
+
+### K-nearest-neighbor Imputation
+
+If there were any NA's left, we could have used one of many ways to eliminate them. I had identified KNN, but did not need to ues it.  
+
+
+### Removing NAV data
+
+The last thing we did was to eliminate columns that varied vary little, using the nzv function.
+
+
+```{r, echo=F}
+# # Eliminate those predictors that don't vary much
+# nearZeros = nearZeroVar(train2, saveMetrics=T)
+# toEliminate = which(nearZeros$nzv)
+# # Did not point to any near zero variables, so no adjustment needed here
+# 
+```
+
+In this particular data, there were no further eliminations as a result of this.
+
+### Correlating predictors
+
+I calculated the correlations between the 52 variables, and selected those that were > .8.
+In plotting them, I found out that row number 5373 was an outlier, and eliminated it.
+
+```{r, echo=F}
+# # Exploratory data analysis
+# cors = abs(cor(train2[,-53]))
+# diag(cors) = 0
+# which(cors > .8, arr.ind=T)
+# plot(train2[,45], train2[,46])
+# # This one clearly indicates an outlier at around 311
+# max(train2[,45])
+# which(train2[,45] == 311)
+# # While we could analyze it, for now, we will remove it
+# train2 = train2[-5373,]
+# 
+```
+
+We repeated this correlation analysis. Since correlation >.8 showed a large number of parameters, I filtered to select only those > .9.
+
+I plotted each of these pairs. The graphs were instructive, but due to the lack of time, they were not taken further into my analysis.
+
+
+```{r, echo=F}
+# cors = abs(cor(train2[,-53]))
+# diag(cors) = 0
+# which(cors > .9, arr.ind=T)
+# 
+# # Plotted various plots, but decided not to take advantage of any of them
+# 
+# plot(train2[,4], train2[,1])
+# plot(train2[,9], train2[,1])
+# plot(train2[,10], train2[,1])
+# plot(train2[,8], train2[,2])
+# plot(train2[,1], train2[,4])
+# plot(train2[,9], train2[,4])
+# plot(train2[,10], train2[,4])
+# plot(train2[,2], train2[,8])
+# plot(train2[,10], train2[,9])
+# plot(train2[,18], train2[,19])
+# 
+# 
+# 
+```
+
+
+### Final predictors
+
+At the end of this exercise, we have 53 columns left. The first 52 are predictors, and the 53rd is the classe column.
+
+### Using preprocessing
+
+While preprocessing should have been done earlier, I did PCA at the end, just to validate if I need to do all my analysis again. It resulted in an accurady of only 37% - much less than what I got from other methods, so I did not pursue this line of thinking. This is another area that should have been further analyzed, given the availability of time.
+
+```{r, echo=F}
+```
+
+
+## Algorithms used
+
+I analyzed using five different algorithms. They are dicussed further in the cross-validation section.
+
+1. Random Forest
+2. Linear Discriminant analysis
+3. GBM
+4. Classification Trees
+5. Native Bayes
+
+Given my computing resources, GBM and Random Forest crashed my R Studio, so I relied on the other four. In a real-life situation, and given more time I would have found additional resources to complete the GBM.
+
+```{r, echo=F}
+```
+
+# Using Cross-validation
+
+For each algorithm, cross-validation is very important. 
+
+While there is built-in cross validation in Caret, I cross validated the selected model through random sampling. The training data was divided into two sets - 75% was kept as training, and 25% as validation. This run was made 10 times, for each run, we started with a different seed, to ensure diversity.
+
+We observed that there was a very close consistency between cross-validation runs. Except for one run, accuracy varied very little - approximately 1 to 3%. This gave us confidence that the final prediction, although less than CV runs, will be close to them.
+
+```{r, echo=F}
+# Note: The code remains the same for each model; you just need to chane
+# the model type.
+
+# # Cross Validation - break into training and test, and do the exercise
+# starter = 123
+# for (k in 1:10 ) {
+#     starter = starter + 1; set.seed(starter)
+#     inTrain = createDataPartition(y=train2$classe, p=.75, list=F)
+#     trainTrain = train2[inTrain,]
+#     trainTest = train2[-inTrain,]
+#          
+#     # Try classification tree
+#     modCART = train(classe ~., method='nb', data=trainTrain) # Change model
+#     modCART$finalModel
+#     
+#     # Impute missing values with KNN
+#     # Not needed because there are no missing values in the test data
+#     #preObjTrain <- preProcess(train2[,-columns],method="knnImpute")
+#     #preObjTest <- preProcess(test2[,-columns],method="knnImpute")
+#     
+#     predictCART = predict(modCART, trainTest)
+#     
+#     # Test for accuracy against training data
+#     a = table(trainTest$classe, predict(modCART, trainTest))
+#     total = 0; diag = 0
+#     for (i in 1:25) {
+#         total = total +a[i]
+#         if ((i %% 6) == 1) {diag = diag+a[i]}
+#     }
+#     print(diag/total)  
+# }
+# 
+
+```
+
+
+
+```{r, echo=F}
+
+# # Try random forest
+# modRF <- train(classe ~ ., data=train2, method='rf', prox=T, ntree=10)
+# predictRF =predict(modRF, test2)
+# write.table(predictRF, file=modRF.txt, quote=F, row.names=F, col.names=F)
+# 
+# #Try GBM
+# modGBM <- train(classe ~ ., data=train2, method='gbm', verbose=F)
+# predictGBM = predict(modGBM, test2)
+# write.table(predictGBM, file=modGBM.txt, quote=F, row.names=F, col.names=F)
+# 
+# #Try Classification Tree
+# modCART <- train(classe ~ ., data=train2, method='rpart')
+# predictCART = predict(modCART, test2)
+# write.table(predictCART, file='modCART.txt', quote=F, row.names=F, col.names=F)
+# 
+# #Try LDA
+# modLDA <- train(classe ~ ., data=train2, method='lda', verbose=F)
+# predictLDA = predict(modLDA, test2)
+# write.table(predictLDA, file='modLDA.txt', quote=F, row.names=F, col.names=F)
+# 
+# # Full model with Naive Bayes
+# modNB <- train(classe ~., data = train2, method='nb')
+# predictNB = predict(modNB, test2)
+# write.table(predictNB, file='modNB.txt', quote=F, row.names=F, col.names=F)
+# 
+
+```
+
+
+# Sample Errors
+
+For classification tree, the average accuracy of validation data across 10 different runs, starting with different seeds for separating the training data into training and validation was abut 65%.
+
+The code ran very fast for LDA, and gave a better average accuracy - about 69%.
+
+While Native Bayes took the longest to run, it gave a better accuracy - 64%.
+
+In order to be even more sure, I ran all three, and did 2 out of 3 voting. In 16 of the 20 test cases, I was able to get to a good result. In four cases, the votes were different for each of the three algorithms. I chose a path of moderation in there, rejecting the two extremes, and taking the middle value.
+
+```{r, echo=FALSE}
+# blanks=rep('', nrow(test2))
+# votingDF = as.data.frame(cbind(NB=predictNB, LDA=predictLDA, CART=predictCART),
+#                          NBvsLDA=blanks, NBvsCART=blanks, LDAvsCART=blanks,
+#                          All3=blanks)
+# votingDF$NBvsLDA = (votingDF$NB == votingDF$LDA)
+# votingDF$NBvsCART = (votingDF$NB == votingDF$CART)
+# votingDF$LDAvsCART = (votingDF$CART == votingDF$LDA)
+# votingDF$All3 = (votingDF$NBvsLDA == votingDF$NBvsCART) 
+```
+
+
+The voting matched NB results for 80% of the test data. So, I considered NB at 75% as a measure of prediction accuracy.
+
+While 75% is not good, given the time constraints, I decided to use this for the project. For the test data, I expect the accuracy to be less than 75%.
+
+In the final run for project submission, I got 65% accuracy. This matches my expectation that test accuracy should have been less than 75%. However, closer to 75% would have been better. 
+
+Given the time constraints, I chose not to analyze further.
+
+
+# Explanation of Decisions
+
+
+### Decision 1: Treating each observation as independent of other observations.
+
+Observations should be grouped by user, and observations for each exercise being performed should be grouped together. In this project we have treated each observation as totally of others.
+
+### Decision 2: Current exploratory data analysis was enough
+
+While I was able to reduce the number of predictors from 159 to 52, further analysis could have reduced them further. In fact, the original paper indicated that only 17 predictors were relevant. While I could have used the 17 they listed, I chose to do the entire analysis on my own, and stop at a certain point. 
+
+### Decision 3: Additional pre-processing and tuning was not needed
+
+This is clearly a decision driven by time constraints. I believe that different pre-processing should have been investigated. And, post model tuning too.
+
+### Decision 4: 74 % accuracy is good enough
+
+Sample accuracy of 74% is not great. Further analysis should have been done to improve this. However, lack of time prevented this additional analysis.
+
+
+```{r}
+```
+
