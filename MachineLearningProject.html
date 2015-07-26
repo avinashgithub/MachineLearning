@@ -134,9 +134,12 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 <div id="sample-errors" class="section level1">
 <h1>Sample Errors</h1>
-<p>For classification tree, the average accuracy of validation data across 10 different runs, starting with different seeds for separating the training data into training and validation was abut 65%.</p>
-<p>The code ran very fast for LDA, and gave a better average accuracy - about 69%.</p>
-<p>While Native Bayes took the longest to run, it gave a better accuracy - 64%.</p>
+<p>For classification tree, the average accuracy of validation data across 10 different runs, starting with different seeds for separating the training data into training and validation was abut 50%. The different values were:</p>
+<p>[1] 0.4867455 [1] 0.4946982 [1] 0.5006117 [1] 0.4963295 [1] 0.4963295 [1] 0.4977569 [1] 0.4902121 [1] 0.4893964 [1] 0.5695351 [1] 0.4991843</p>
+<p>The code ran very fast for LDA, and gave a better average accuracy - about 70%.The different values were:</p>
+<p>[1] 0.6939233 [1] 0.7053426 [1] 0.7061582 [1] 0.697186 [1] 0.6990212 [1] 0.7075856 [1] 0.7075856 [1] 0.7051387 [1] 0.6924959 [1] 0.7037113</p>
+<p>While Native Bayes took the longest to run, it gave a better accuracy - 74%. The difference values were:</p>
+<p>[1] 0.7469413 [1] 0.7393964 [1] 0.7424551 [1] 0.7406199 [1] 0.7483687 [1] 0.7304241 [1] 0.7391925 [1] 0.740416 [1] 0.7422512 [1] 0.7257341</p>
 <p>In order to be even more sure, I ran all three, and did 2 out of 3 voting. In 16 of the 20 test cases, I was able to get to a good result. In four cases, the votes were different for each of the three algorithms. I chose a path of moderation in there, rejecting the two extremes, and taking the middle value.</p>
 <p>The voting matched NB results for 80% of the test data. So, I considered NB at 75% as a measure of prediction accuracy.</p>
 <p>While 75% is not good, given the time constraints, I decided to use this for the project. For the test data, I expect the accuracy to be less than 75%.</p>
